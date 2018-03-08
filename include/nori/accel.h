@@ -19,8 +19,35 @@
 #pragma once
 
 #include <nori/mesh.h>
+#include <list>
+#include <vector>
 
 NORI_NAMESPACE_BEGIN
+
+class OctNode;
+typedef std::list<OctNode>::iterator OctNodeIter;
+const size_t MAXDEPTH = 6;
+
+class OctNode
+{
+public:
+	OctNode() {};
+
+	std::list<int> triangles;
+	BoundingBox3f bbox;
+	std::vector<OctNodeIter> children;
+};
+
+class Compare
+{
+public:
+	Compare(Ray3f* r) { ray = r; };
+	bool operator()(OctNodeIter iter1, OctNodeIter iter2)
+	{
+		return iter1->bbox.distanceTo(ray->o) < iter2->bbox.distanceTo(ray->o);
+	}
+	Ray3f* ray;
+};
 
 /**
  * \brief Acceleration data structure for ray intersection queries
@@ -65,9 +92,15 @@ public:
      */
     bool rayIntersect(const Ray3f &ray, Intersection &its, bool shadowRay) const;
 
+	OctNodeIter buildOctNode(BoundingBox3f bb, std::list<int> tris, int depth);
+	void rayIntersectRecursive(OctNodeIter node, Ray3f &ray, Intersection &its, uint32_t& f, bool& found, bool shadowRay) const;
+
 private:
     Mesh         *m_mesh = nullptr; ///< Mesh (only a single one for now)
     BoundingBox3f m_bbox;           ///< Bounding box of the entire scene
+
+	std::list<OctNode> nodes; // all nodes for the oct tree
+	OctNodeIter root;
 };
 
 NORI_NAMESPACE_END
