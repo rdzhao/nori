@@ -30,15 +30,11 @@ void Accel::addMesh(Mesh *mesh) {
 
 void Accel::build() {
     /* Nothing to do here for now */
-	cout <<"In Build Function ..." << endl;
 	std::list<int> tris;
 	for (int i = 0; i < m_mesh->getTriangleCount(); ++i)
 		tris.push_back(i);
 	cout << "Total Triangle Num: " << m_mesh->getTriangleCount() << endl;
 	root = buildOctNode(m_mesh->getBoundingBox(), tris, 0);
-
-	//for (OctNodeIter iter = nodes.begin(); iter != nodes.end(); ++iter)
-		//cout << iter->children.size() << endl;
 
 	cout << "Build Complete .. "<< endl;
 }
@@ -128,10 +124,6 @@ bool Accel::rayIntersect(const Ray3f &ray_, Intersection &its, bool shadowRay) c
 
 OctNodeIter Accel::buildOctNode(BoundingBox3f bb, std::list<int> tris, int depth)
 {
-	//cout << "InComing: " << tris.size() << endl;
-	//cout << bb.min<< endl;
-	//cout << bb.max << endl;
-
 	if (tris.empty())
 		return nodes.end();
 
@@ -142,12 +134,10 @@ OctNodeIter Accel::buildOctNode(BoundingBox3f bb, std::list<int> tris, int depth
 		
 		otIter->bbox = bb;
 		otIter->triangles = tris;
-		//cout << "I'm Here ok! " << tris.size() << " " << otIter->triangles.size() << endl;
-		//cout << bb.min << " " << bb.max << endl;
+
 		return otIter;
 	} 
 	else{
-		//cout << "Fuck! "<< endl;
 		std::vector<BoundingBox3f> subBoxes;
 		std::vector<std::list<int>> subLists;
 		subBoxes.resize(8);
@@ -161,26 +151,15 @@ OctNodeIter Accel::buildOctNode(BoundingBox3f bb, std::list<int> tris, int depth
 			BoundingBox3f subBox(center);
 			subBox.expandBy(corner);
 			subBoxes[j] = subBox;
-			//cout << subBox.min << endl;
-			//cout << "$$$$$$$$"<< endl;
-			//cout << subBox.max << endl;
-			//cout << "----------"<< endl;
 		}
 
 		for (auto iter = tris.begin(); iter != tris.end(); ++iter) {
 			for (int j = 0; j < 8; ++j){
-				//cout << subBoxes[j].min << endl;
-				//cout << subBoxes[j].max << endl;
-				//cout << "*************"<< endl;
-				//cout << m_mesh->getBoundingBox(*iter).min<< endl;
-				//cout << m_mesh->getBoundingBox(*iter).max << endl;
-				//cout << "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&"<< endl;
 				if (subBoxes[j].overlaps(m_mesh->getBoundingBox(*iter))){
 					subLists[j].push_back(*iter);
 				}
 			}
 		}
-
 
 		OctNode octNode;
 		nodes.push_back(octNode);
@@ -188,9 +167,11 @@ OctNodeIter Accel::buildOctNode(BoundingBox3f bb, std::list<int> tris, int depth
 
 		otIter->bbox = bb;
 		for (int i = 0; i < 8; ++i) {
-			//cout << subLists[i].size() << endl;
 			otIter->children.push_back(buildOctNode(subBoxes[i], subLists[i], depth + 1));
 		}
+
+		subBoxes.clear();
+		subLists.clear();
 
 		return otIter;
 	}
@@ -198,25 +179,18 @@ OctNodeIter Accel::buildOctNode(BoundingBox3f bb, std::list<int> tris, int depth
 
 void Accel::rayIntersectRecursive(OctNodeIter node, Ray3f &ray, Intersection &its, uint32_t& f, bool& found, bool shadowRay) const
 {
-	//cout << "In! "<< endl;
-	//if (found)
-	//	return;
-
 	if (node->triangles.empty()){ 
-		//cout << "Inter Nodes"<< endl;
 		// reorder here
 		//std::sort(node->children.begin(), node->children.end(), Compare(&ray));
 
 		for (int i = 0; i < 8; ++i){
-			//cout << i<< endl;
-			//cout << node->children[i]->bbox.min << endl;
-			//cout << "Done"<< endl;
 			if (node->children[i] != nodes.end() && node->children[i]->bbox.rayIntersect(ray))
 				rayIntersectRecursive(node->children[i], ray, its, f, found, shadowRay);
+			//if (found)
+				//break;
 		}
 	} // not leaf
 	else {
-		//cout << "OK"<< endl;
 		for (auto iter = node->triangles.begin(); iter != node->triangles.end(); ++iter){
 			float u, v, t;
 			if (m_mesh->rayIntersect(*iter, ray, u, v, t)) {

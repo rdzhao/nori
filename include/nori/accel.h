@@ -38,11 +38,10 @@ public:
 	std::vector<OctNodeIter> children;
 };
 
-class Compare
+struct Compare
 {
-public:
 	Compare(Ray3f* r) { ray = r; };
-	bool operator()(OctNodeIter iter1, OctNodeIter iter2)
+	bool operator()(OctNodeIter& iter1, OctNodeIter& iter2)
 	{
 		return iter1->bbox.distanceTo(ray->o) < iter2->bbox.distanceTo(ray->o);
 	}
